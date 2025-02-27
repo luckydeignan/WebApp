@@ -1,0 +1,37 @@
+.book-container {
+    width: 100vw; /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    background-color: blue; /* Optional: Add a background color */
+  }
+  
+  .book-wrapper {
+    max-width: 90%; /* At most 90% of the parent's width */
+    max-height: 90%; /* At most 90% of the parent's height */
+    width: 100%; /* Take up available space */
+    height: 100%; /* Take up available space */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    overflow: hidden; /* Prevent any overflow */
+    background-color: red;
+  }
+  
+  .book-image {
+    width: 100%; /* Fill the width of the parent */
+    height: 100%; /* Fill the height of the parent */
+    object-fit: contain; /* Ensure the image fits within the container without distortion */
+  }
+  
+  .content {
+    position: absolute;
+    top: 0%; /* Adjust based on where you want it */
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centers content */
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
