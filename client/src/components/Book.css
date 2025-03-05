@@ -1,22 +1,21 @@
+
+
 .book-container {
     width: 100vw; /* Full viewport width */
     height: 100vh; /* Full viewport height */
     display: flex;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
-    background-color: blue; /* Optional: Add a background color */
-  }
+    background-color: darkblue;
+}
   
   .book-wrapper {
     max-width: 90%; /* At most 90% of the parent's width */
     max-height: 90%; /* At most 90% of the parent's height */
-    width: 100%; /* Take up available space */
-    height: 100%; /* Take up available space */
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    overflow: hidden; /* Prevent any overflow */
-    background-color: red;
+    height: 100%;
+    width: 100%;
+    background-image: url('../assets/Green_Open_Book_PNG_Clipart-1054.png');
+    background-size: 100% 100%;
   }
   
   .book-image {
@@ -27,11 +26,12 @@
   
   .content {
     position: absolute;
-    top: 0%; /* Adjust based on where you want it */
-    left: 50%;
-    transform: translate(-50%, -50%); /* Centers content */
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
+    top: 14%;
+    left: 19%;
+    max-width: 30%;
+    transform: rotate(3deg);
+    gap: 3px;
+    display: flex;
+    flex-wrap: wrap;
   }
   
