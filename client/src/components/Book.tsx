@@ -1,6 +1,7 @@
 import './book.css';
 import image from '../assets/Green_Open_Book_PNG_Clipart-1054.png'; // replace with the actual image file
 import Word from './Word';
+import { useEffect } from 'react';
 
 
 const Book = () => {
@@ -16,15 +17,28 @@ const Book = () => {
 
   const firstPageWords = firstPage.split(' ');
   
+  useEffect(() => {
+    fetch('http://localhost:3000/api/voice', {
+      method: 'POST', 
+      body: JSON.stringify({ content: firstPage })
+    }).then(response => response.json())
+    .then(data => console.log('yay', data))
+    .catch(error => console.error(error));
+  }, []);
+
   return (
-    <div className="book-container">
-      <div className="book-wrapper">
-        <p className="content">
-          {firstPageWords.map((word, index) => (
+    <div className='flex flex-row w-screen h-screen'>
+      
+      <div className='flex w-1/2 justify-center p-4 gap-x-1 flex-wrap'>
+      {firstPageWords.map((word, index) => (
             <Word key={index} word={word} />
           ))}
-        </p>
       </div>
+      <hr className='w-px bg-black h-screen'/>
+      <div className='w-1/2 flex justify-center'>
+        Different content
+      </div>
+
     </div>
   );
 };
