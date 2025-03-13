@@ -11,4 +11,6 @@ speaker_embedding = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(
 
 speech = synthesiser("Hello, my dog is cooler than you!", forward_params={"speaker_embeddings": speaker_embedding})
 
+print(speech["sampling_rate"])
+
 sf.write("speech.wav", speech["audio"], samplerate=speech["sampling_rate"])
