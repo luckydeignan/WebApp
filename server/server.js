@@ -16,7 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.get("/api/data", (req, res) => {
-  res.json({ message: "Hello from server!" });
+  res.json({ message: "Hello from server!" })
+  .catch(error => console.error(error));
 });
 
 const dummy = {}
