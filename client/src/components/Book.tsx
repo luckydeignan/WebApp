@@ -2,15 +2,17 @@ import './book.css';
 import exampleImage from '../assets/exampleImage.png'; // replace with the actual image file
 import Word from './Word';
 import { useEffect , useRef , useState } from 'react';
-import dummyData from '../assets/DummyReadingData.wav';
+import pageOneAudio from '../assets/UROPpage1.m4a';
+import pageTwoAudio from '../assets/UROPpage2.m4a';
 
 const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
+  const [currentAudio, setCurrentAudio] = useState(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const demoToggle = false
+  const voiceDemoToggle = true
 
 
   // Dummy reading data
@@ -51,35 +53,6 @@ const Book = () => {
 
   const pages = [firstPageWords, secondPageWords, thirdPageWords, fourthPageWords, fifthPageWords];
 
-  // dummy voiceOver data
-  const wordsData = [
-    { text: "In", time: [2.21, 3.5] },
-    { text: "The", time: [3.5, 4.6] },
-    { text: "Heart", time: [4.6, 5.8] },
-    { text: "Of", time: [5.8, 6.85] },
-    { text: "A", time: [6.85, 7.7] },
-    { text: "Misty,", time: [7.7, 8.63] },
-    { text: "Forgotten", time: [8.63, 9.93] },
-    { text: "Town,", time: [9.93, 11.15] },
-    { text: "Where", time: [11.15, 12.23] },
-    { text: "cobblestone", time: [12.23, 13.42] },
-    { text: "streets", time: [13.42, 14.6] },
-    { text: "twisted", time: [14.6, 15.63] },
-    { text: "like", time: [15.63, 16.7] },
-    { text: "veins", time: [16.7, 17.67] },
-    { text: "through", time: [17.67, 18.67] },
-    { text: "the", time: [18.67, 19.74] },
-    { text: "Hills,", time: [19.74, 20.84] },
-    { text: "There", time: [20.84, 21.83] },
-    { text: "Stood", time: [21.83, 23.08] },
-    { text: "A", time: [23.08, 24.02] },
-    { text: "Tiny", time: [24.02, 24.79] },
-    { text: "Shop", time: [24.79, 25.78] },
-    { text: "Called", time: [25.78, 26.7] },
-    { text: "The", time: [26.7, 27.73] },
-    { text: "Clockmaker’s", time: [27.73, 29.59] },
-    { text: "Haven.", time: [29.59, 30.59] } // Added +1 second buffer for last word
-  ];
 
   const sentenceTimestamps = [
     {
@@ -111,20 +84,33 @@ const Book = () => {
       "time": [44.50, 51.00]
     }
   ]
+
+  const words = [];
+  for (const sentenceObj of sentenceTimestamps) {
+    for (const word of sentenceObj.text.split(' ')) {
+      words.push({ text: word, time: sentenceObj.time });
+    }
+  }
   
   
   
 
   // useEffect that initializes the audio element
   useEffect(() => {
-    audioRef.current = new Audio(dummyData); // Path to your audio file
+    audioRef.current = new Audio(pageOneAudio); // Path to your audio file
 
     // Add a timeupdate event listener to track the current time
     const handleTimeUpdate = () => {
       setCurrentTime(audioRef.current.currentTime); // Update state with current time
     };
 
+      // Add an ended event listener to stop playback when audio ends
+  const handleAudioEnd = () => {
+    setIsPlaying(false); // Set isPlaying to false when audio ends
+  };
+
     audioRef.current.addEventListener('timeupdate', handleTimeUpdate);
+    audioRef.current.addEventListener('ended', handleAudioEnd);
 
     // Cleanup on component unmount
     return () => {
@@ -168,14 +154,14 @@ const Book = () => {
     <div className='flex flex-row w-screen relative'>
       
       <div className='w-1/2 '>
-        <div className='flex w-full justify-center p-4 gap-x-1 flex-wrap'>
-          {demoToggle ? wordsData.map((wordObj, index) => (
+        <div className='flex w-full justify-center p-4 flex-wrap'>
+          {voiceDemoToggle ? words.map((wordObj, index) => (
                 <Word key={index} word={wordObj.text} isHighlighted={wordObj.time[0] <= currentTime && currentTime < wordObj.time[1] && isPlaying}/>
               )) : pages[currentPageIdx].map((word, index) => (
                 <Word key={index} word={word} isHighlighted={false}/>
               ))
               }
-              {!demoToggle && <img className='w-1/2 m-4' src={exampleImage}></img>}
+            <img className='w-1/2 m-4' src={exampleImage}></img>
         </div>
       </div>
       <div className='w-px bg-black absolute top-0 bottom-0 right-1/2'></div>
