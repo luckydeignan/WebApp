@@ -9,7 +9,6 @@ const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [currentAudio, setCurrentAudio] = useState(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const voiceDemoToggle = true
@@ -54,7 +53,7 @@ const Book = () => {
   const pages = [firstPageWords, secondPageWords, thirdPageWords, fourthPageWords, fifthPageWords];
 
 
-  const sentenceTimestamps = [
+  const sentenceTimestampsPageOne = [
     {
       "text": "In the heart of a misty, forgotten town where cobblestone streets twisted like veins through the hills, there stood a tiny shop called The Clockmaker's Haven.",
       "time": [0, 11.40]
@@ -85,19 +84,68 @@ const Book = () => {
     }
   ]
 
-  const words = [];
-  for (const sentenceObj of sentenceTimestamps) {
-    for (const word of sentenceObj.text.split(' ')) {
-      words.push({ text: word, time: sentenceObj.time });
+  const sentenceTimestampsPageTwo = [
+    {
+      "text": "Elias studied the woman with sharp, knowing eyes.",
+      "time": [0, 4.15]
+    },
+    {
+      "text": "She was young, but her face carried the weight of someone who had lost more than she could bear.",
+      "time": [4.15, 8.90]
+    },
+    {
+      "text": "Her dark hair clung to her damp forehead, and her hands trembled against the wooden counter.",
+      "time": [8.90, 14.00]
+    },
+    {
+      "text": "\"A clock that finds what is lost,\" Elias repeated, his voice as measured as the ticking that filled the shop.",
+      "time": [14.00, 21.65]
+    },
+    {
+      "text": "Time does not return what it has taken, child.",
+      "time": [21.65, 24.70]
+    },
+    {
+      "text": "The woman swallowed hard, gripping the edge of the counter.",
+      "time": [24.70, 27.95]
+    },
+    {
+      "text": "This isn't about time, it's about something stolen—something that should never have been taken.",
+      "time": [27.95, 33.40]
+    },
+    {
+      "text": "For a long moment, Elias said nothing. Then, with a quiet sigh, he turned toward the back of the shop.",
+      "time": [33.40, 40.30]
+    },
+    {
+      "text": "Rows of intricate timepieces lined the shelves, their hands moving in perfect synchrony.",
+      "time": [40.30, 51.00]
     }
+  ]
+  
+  const rawStampData = [sentenceTimestampsPageOne, sentenceTimestampsPageTwo];
+  const pagesData = [];
+  for (let i = 0; i < rawStampData.length; i++) {
+    const words = [];
+    for (const sentenceObj of rawStampData[i]) {
+      for (const word of sentenceObj.text.split(' ')) {
+        words.push({ text: word, time: sentenceObj.time });
+      }
+    }
+    pagesData.push(words);
   }
+  console.log(pagesData);
+
   
   
   
 
   // useEffect that initializes the audio element
   useEffect(() => {
-    audioRef.current = new Audio(pageOneAudio); // Path to your audio file
+    const audios = [pageOneAudio, pageTwoAudio];
+    const currentAudio = audios[currentPageIdx];
+
+    audioRef.current = new Audio(currentAudio); // Path to your audio file
 
     // Add a timeupdate event listener to track the current time
     const handleTimeUpdate = () => {
@@ -119,7 +167,7 @@ const Book = () => {
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [currentPageIdx]);
 
   // Play/pause handler
   const togglePlayPause = () => {
@@ -155,7 +203,7 @@ const Book = () => {
       
       <div className='w-1/2 '>
         <div className='flex w-full justify-center p-4 flex-wrap'>
-          {voiceDemoToggle ? words.map((wordObj, index) => (
+          {voiceDemoToggle ? pagesData[currentPageIdx].map((wordObj, index) => (
                 <Word key={index} word={wordObj.text} isHighlighted={wordObj.time[0] <= currentTime && currentTime < wordObj.time[1] && isPlaying}/>
               )) : pages[currentPageIdx].map((word, index) => (
                 <Word key={index} word={word} isHighlighted={false}/>
