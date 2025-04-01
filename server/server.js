@@ -15,11 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.get("/api/data", (req, res) => {
-  res.json({ message: "Hello from server!" })
-  .catch(error => console.error(error));
-});
-
+// dumb api code, get rid of in future
 const dummy = {}
 const requestBody = {
   "audioConfig": {

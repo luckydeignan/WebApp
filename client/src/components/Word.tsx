@@ -5,7 +5,7 @@ import './Word.css';
 const Word = (props: {word: string, isHighlighted: boolean}) => {
 
     return (
-        <div style={{lineHeight: '1.5', backgroundColor: props.isHighlighted ? 'yellow' : 'transparent'}}>{props.word}</div>
+        <div style={{lineHeight: '3.5', backgroundColor: props.isHighlighted ? 'yellow' : 'transparent'}}>{props.word}</div>
     )
 }
 
