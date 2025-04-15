@@ -1,6 +1,3 @@
-import React from 'react';
-import './Word.css';
-
 
 const Word = (props: {word: string, isHighlighted: boolean}) => {
 
