@@ -6,6 +6,7 @@ import pageOneAudio from '../assets/UROPpage1.m4a';
 import pageTwoAudio from '../assets/UROPpage2.m4a';
 import threePigsWords from '../assets/threePigsTimestamps.json';
 import threePigsAudio from '../assets/books-for-kids-read-aloud.wav';
+import threePigsColabAudio from '../assets/colabTimestamps.json';
 
 const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,7 +14,7 @@ const Book = () => {
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const voiceDemoToggle = false;
+  const voiceDemoToggle = true;
 
 
   // // Dummy reading data
@@ -204,8 +205,8 @@ const Book = () => {
         <div className='flex w-full justify-center p-4 flex-wrap'>
           {voiceDemoToggle ? pagesData[currentPageIdx].map((wordObj, index) => (
                 <Word key={index} word={wordObj.text} isHighlighted={wordObj.time[0] <= currentTime && currentTime < wordObj.time[1] && isPlaying}/>
-              )) : threePigsWords.map((wordObj, index) => (
-                <Word key={index} word={wordObj.word} isHighlighted={wordObj.time[0] <= currentTime && currentTime < wordObj.time[1] && isPlaying}/>
+              )) : threePigsColabAudio.map((wordObj, index) => (
+                <Word key={index} word={wordObj.text} isHighlighted={wordObj.timestamp[0] <= currentTime && currentTime < wordObj.timestamp[1] && isPlaying}/>
               ))
               }
             <img className='w-1/2 m-4' src={exampleImage}></img>
