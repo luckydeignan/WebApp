@@ -9,7 +9,7 @@ interface PageProps {
 
 const Page = (props: PageProps) => {
     return (
-      <div className='flex w-full justify-center p-4 flex-wrap'>
+      <div className='flex w-full justify-center gap-x-2 p-4 flex-wrap'>
         {props.words.map((wordObj, index) => (
           <Word 
             key={index} 

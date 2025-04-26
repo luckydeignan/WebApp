@@ -5,6 +5,7 @@ import pageOneAudio from '../assets/UROPpage1.m4a';
 import pageTwoAudio from '../assets/UROPpage2.m4a';
 import threePigsAudio from '../assets/books-for-kids-read-aloud.wav';
 import threePigsColabAudio from '../assets/colabTimestamps.json';
+import threePigsTimestamps from 'C:\\Users\\ljdde\\OneDrive\\Desktop\\UROPs\\CataniaUROP\\WebApp2\\WebApp\\reformatted.json';
 import Navigation from './Navigate';
 import Page from './Page';
 
@@ -14,101 +15,76 @@ const Book = () => {
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const voiceDemoToggle: boolean = false;
 
-  const sentenceTimestampsPageOne = [
-    {
-      "text": "In the heart of a misty, forgotten town where cobblestone streets twisted like veins through the hills, there stood a tiny shop called The Clockmaker's Haven.",
-      "timestamp": [0, 11.40]
-    },
-    {
-      "text": "It belonged to an old man named Elias Hawthorn, whose hands—though wrinkled with time—still crafted timepieces with mesmerizing precision.",
-      "timestamp": [11.40, 21.00]
-    },
-    {
-      "text": "Elias was no ordinary clockmaker.",
-      "timestamp": [21.00, 23.64]
-    },
-    {
-      "text": "The townsfolk whispered that his clocks never simply told time—they held it.",
-      "timestamp": [23.64, 28.32]
-    },
-    {
-      "text": "They claimed that those who owned an Elias Hawthorn clock could hear echoes of their past or glimpse faint shadows of their future in its ticking.",
-      "timestamp": [28.32, 37.00]
-    },
-    {
-      "text": "One evening, just as Elias was about to lock up, a young woman burst into his shop, breathless and pale.",
-      "timestamp": [37.00, 44.50]
-    },
-    {
-      "text": "\"Please,\" she said, her voice trembling, \"I need a clock that can find something lost.\"",
-      "timestamp": [44.50, 51.00]
-    }
-  ];
+  /**
+   * Breaks an array of word-timestamp objects into batches that
+   *   – contain ≥ chunkSize words
+   *   – end on the first word whose text finishes with “.”
+   *
+   * @param jsonList  full list of {text, timestamp} items
+   * @param chunkSize minimum number of words per batch (default = 160)
+   * @returns         nested array: batches[batchIdx][wordIdx]
+   */
+  function splitJsonList(
+    jsonList: { text: string; timestamp: number[] }[],
+    chunkSize = 160
+  ): { text: string; timestamp: number[] }[][] {
+    const batches: { text: string; timestamp: number[] }[][] = [];
+    let currentBatch: { text: string; timestamp: number[] }[] = [];
 
-  const sentenceTimestampsPageTwo = [
-    {
-      "text": "Elias studied the woman with sharp, knowing eyes.",
-      "timestamp": [0, 4.15]
-    },
-    {
-      "text": "She was young, but her face carried the weight of someone who had lost more than she could bear.",
-      "timestamp": [4.15, 8.90]
-    },
-    {
-      "text": "Her dark hair clung to her damp forehead, and her hands trembled against the wooden counter.",
-      "timestamp": [8.90, 14.00]
-    },
-    {
-      "text": "\"A clock that finds what is lost,\" Elias repeated, his voice as measured as the ticking that filled the shop.",
-      "timestamp": [14.00, 21.65]
-    },
-    {
-      "text": "time does not return what it has taken, child.",
-      "timestamp": [21.65, 24.70]
-    },
-    {
-      "text": "The woman swallowed hard, gripping the edge of the counter.",
-      "timestamp": [24.70, 27.95]
-    },
-    {
-      "text": "This isn't about time, it's about something stolen—something that should never have been taken.",
-      "timestamp": [27.95, 33.40]
-    },
-    {
-      "text": "For a long moment, Elias said nothing. Then, with a quiet sigh, he turned toward the back of the shop.",
-      "timestamp": [33.40, 40.30]
-    },
-    {
-      "text": "Rows of intricate timepieces lined the shelves, their hands moving in perfect synchrony.",
-      "timestamp": [40.30, 51.00]
-    }
-  ];
-  
-  const rawStampData = [sentenceTimestampsPageOne, sentenceTimestampsPageTwo];
-  const pagesData: { text: string, timestamp: number[] }[][] = [];
-  for (let i = 0; i < rawStampData.length; i++) {
-    const words = [];
-    for (const sentenceObj of rawStampData[i]) {
-      for (const word of sentenceObj.text.split(' ')) {
-        words.push({ text: word, timestamp: sentenceObj.timestamp });
+    for (const word of jsonList) {
+      currentBatch.push(word);
+
+      const reachedMin = currentBatch.length >= chunkSize;
+      const endsSentence = word.text.trim().endsWith('.');
+
+      if (reachedMin && endsSentence) {
+        batches.push(currentBatch);
+        currentBatch = [];
       }
     }
-    pagesData.push(words);
+
+    // push any trailing words that didn’t finish with “.”
+    if (currentBatch.length) batches.push(currentBatch);
+
+    return batches;
   }
-  
-  const audios = [pageOneAudio, pageTwoAudio];
+
+  const threePigsPages: { text: string, timestamp: number[] }[][] = splitJsonList(threePigsTimestamps);
+
 
   // Initialize the audio element
   useEffect(() => {
-    audioRef.current = voiceDemoToggle 
-      ? new Audio(audios[currentPageIdx]) 
-      : new Audio(threePigsAudio);
+    audioRef.current = new Audio(threePigsAudio);
+
+    // Helper function to get page bounds of timestamps
+    const getPageBounds = (pageIdx: number) => {
+      const page = threePigsPages[pageIdx];
+      if (!page?.length) return [0, Infinity];
+      const first = page[0].timestamp[0];
+      const last  = page[page.length - 1].timestamp[1];
+      return [first, last];
+    };
 
     // Track the current time
     const handleTimeUpdate = () => {
-      setCurrentTime(audioRef.current.currentTime);
+      const now = audioRef.current!.currentTime;
+      setCurrentTime(now);
+
+    // FEATURE FOR AUTO-ADVANCE PAGES BASED ON AUDIO TIME -- DISABLED BC AUDIOREF auto-reset upon page change
+    //   const [pageStart, pageEnd] = getPageBounds(currentPageIdx);
+
+    
+    // // past the end → go forward
+    // if (now > pageEnd && currentPageIdx < threePigsPages.length - 1) {
+    //   nextPage();
+    //   return;                       
+    // }
+
+    // // before the start → go back
+    // if (now < pageStart && currentPageIdx > 0) {
+    //   setCurrentPageIdx(p => p - 1);
+    // }
     };
 
     // Stop playback when audio ends
@@ -127,13 +103,14 @@ const Book = () => {
         audioRef.current.pause();
       }
     };
-  }, [currentPageIdx, voiceDemoToggle]);
+  }, [currentPageIdx]);
 
   // Play/pause handler
   const togglePlayPause = () => {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
+      audioRef.current.currentTime = threePigsPages[currentPageIdx][0].timestamp[0];
       audioRef.current.play();
     }
     setIsPlaying(!isPlaying);
@@ -141,10 +118,10 @@ const Book = () => {
 
   // Next page handler
   const nextPage = () => {
-    if (currentPageIdx < pagesData.length - 1) {
+    if (currentPageIdx < threePigsPages.length - 1) {
       setCurrentPageIdx(currentPageIdx + 1);
       setCurrentTime(0);
-      setIsPlaying(false);
+      setIsPlaying(false); // TOGGLE BASED ON DESIRED FEATURE
     }
   };
 
@@ -158,9 +135,7 @@ const Book = () => {
   };
 
   // Get the current page data
-  const currentPageData: { text: string, timestamp: number[] }[] = voiceDemoToggle 
-    ? pagesData[currentPageIdx] 
-    : threePigsColabAudio;
+  const currentPageData: { text: string, timestamp: number[] }[] = threePigsPages[currentPageIdx];
 
   return (
     <div className='flex flex-row w-screen relative'>
