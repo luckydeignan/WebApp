@@ -1,20 +1,16 @@
-import './book.css';
-import exampleImage from '../assets/exampleImage.png'; // replace with the actual image file
-import { useEffect , useRef , useState } from 'react';
-import pageOneAudio from '../assets/UROPpage1.m4a';
-import pageTwoAudio from '../assets/UROPpage2.m4a';
-import threePigsAudio from '../assets/books-for-kids-read-aloud.wav';
-import threePigsColabAudio from '../assets/colabTimestamps.json';
-import threePigsTimestamps from 'C:\\Users\\ljdde\\OneDrive\\Desktop\\UROPs\\CataniaUROP\\WebApp2\\WebApp\\reformatted.json';
-import Navigation from './Navigate';
-import Page from './Page';
+import "./book.css";
+import exampleImage from "../assets/exampleImage.png"; // replace with the actual image file
+import { useEffect, useRef, useState } from "react";
+import threePigsAudio from "../assets/books-for-kids-read-aloud.wav";
+import threePigsTimestamps from "C:\\Users\\ljdde\\OneDrive\\Desktop\\UROPs\\CataniaUROP\\WebApp2\\WebApp\\reformatted.json";
+import Navigation from "./Navigate";
+import Page from "./Page";
 
 const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
 
   /**
    * Breaks an array of word-timestamp objects into batches that
@@ -36,7 +32,7 @@ const Book = () => {
       currentBatch.push(word);
 
       const reachedMin = currentBatch.length >= chunkSize;
-      const endsSentence = word.text.trim().endsWith('.');
+      const endsSentence = word.text.trim().endsWith(".");
 
       if (reachedMin && endsSentence) {
         batches.push(currentBatch);
@@ -50,68 +46,78 @@ const Book = () => {
     return batches;
   }
 
-  const threePigsPages: { text: string, timestamp: number[] }[][] = splitJsonList(threePigsTimestamps);
+  const threePigsPages: { text: string; timestamp: number[] }[][] =
+    splitJsonList(threePigsTimestamps);
 
 
-  // Initialize the audio element
+  // Initialize audio only once on component mount
   useEffect(() => {
     audioRef.current = new Audio(threePigsAudio);
 
-    // Helper function to get page bounds of timestamps
-    const getPageBounds = (pageIdx: number) => {
-      const page = threePigsPages[pageIdx];
-      if (!page?.length) return [0, Infinity];
-      const first = page[0].timestamp[0];
-      const last  = page[page.length - 1].timestamp[1];
-      return [first, last];
-    };
-
-    // Track the current time
     const handleTimeUpdate = () => {
       const now = audioRef.current!.currentTime;
       setCurrentTime(now);
-
-    // FEATURE FOR AUTO-ADVANCE PAGES BASED ON AUDIO TIME -- DISABLED BC AUDIOREF auto-reset upon page change
-    //   const [pageStart, pageEnd] = getPageBounds(currentPageIdx);
-
-    
-    // // past the end → go forward
-    // if (now > pageEnd && currentPageIdx < threePigsPages.length - 1) {
-    //   nextPage();
-    //   return;                       
-    // }
-
-    // // before the start → go back
-    // if (now < pageStart && currentPageIdx > 0) {
-    //   setCurrentPageIdx(p => p - 1);
-    // }
     };
 
-    // Stop playback when audio ends
     const handleAudioEnd = () => {
       setIsPlaying(false);
     };
 
-    audioRef.current.addEventListener('timeupdate', handleTimeUpdate);
-    audioRef.current.addEventListener('ended', handleAudioEnd);
+    audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
+    audioRef.current.addEventListener("ended", handleAudioEnd);
 
-    // Cleanup on component unmount or page change
+    // Cleanup only on component unmount
     return () => {
       if (audioRef.current) {
-        audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-        audioRef.current.removeEventListener('ended', handleAudioEnd);
+        audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
+        audioRef.current.removeEventListener("ended", handleAudioEnd);
         audioRef.current.pause();
       }
     };
-  }, [currentPageIdx]);
+  }, []); // Empty dependency array - runs once on mount
+
+
+
+  // Separate effect for page boundary checking
+useEffect(() => {
+  if (!audioRef.current || !threePigsPages[currentPageIdx]?.length) return;
+  
+  const checkBoundary = () => {
+    const now = audioRef.current!.currentTime;
+    const page = threePigsPages[currentPageIdx];
+    
+    const first = page[0].timestamp[0];
+    const last = page[page.length - 1].timestamp[1];
+    
+    if (first > now || now > last) {
+      setIsPlaying(false);
+      audioRef.current!.pause();
+      // Optional: reset to beginning of page
+      audioRef.current!.currentTime = first;
+    }
+  };
+  
+  // Check boundaries when this effect runs
+  checkBoundary();
+  
+  // Also check on time updates
+  const boundaryCheck = () => checkBoundary();
+  audioRef.current.addEventListener('timeupdate', boundaryCheck);
+  
+  return () => {
+    if (audioRef.current) {
+      audioRef.current.removeEventListener('timeupdate', boundaryCheck);
+    }
+  };
+}, [currentPageIdx]); // Rerun when page changes or time updates
+
 
   // Play/pause handler
   const togglePlayPause = () => {
     if (isPlaying) {
-      audioRef.current.pause();
+      audioRef.current!.pause();
     } else {
-      audioRef.current.currentTime = threePigsPages[currentPageIdx][0].timestamp[0];
-      audioRef.current.play();
+      audioRef.current!.play();
     }
     setIsPlaying(!isPlaying);
   };
@@ -119,9 +125,11 @@ const Book = () => {
   // Next page handler
   const nextPage = () => {
     if (currentPageIdx < threePigsPages.length - 1) {
-      setCurrentPageIdx(currentPageIdx + 1);
-      setCurrentTime(0);
-      setIsPlaying(false); // TOGGLE BASED ON DESIRED FEATURE
+      const nextPageIdx = currentPageIdx + 1;
+      audioRef.current!.pause();
+      audioRef.current!.currentTime = threePigsPages[nextPageIdx][0].timestamp[0];
+      setCurrentPageIdx(nextPageIdx);
+      setIsPlaying(false); 
     }
   };
 
@@ -129,26 +137,49 @@ const Book = () => {
   const prevPage = () => {
     if (currentPageIdx > 0) {
       setCurrentPageIdx(currentPageIdx - 1);
-      setCurrentTime(0);
       setIsPlaying(false);
     }
   };
 
+  // Add this function to your Book component
+const setTime = (timestamp: number) => {
+  if (audioRef.current) {
+    // First pause any current playback
+    audioRef.current.pause();
+    
+    // Set the time to the provided timestamp
+    audioRef.current.currentTime = timestamp;
+    
+    // Start playing from this position
+    audioRef.current.play()
+      .then(() => {
+        // Update playing state
+        setIsPlaying(true);
+      })
+      .catch((error) => {
+        console.error("Failed to play audio:", error);
+        setIsPlaying(false);
+      });
+  }
+};
+
   // Get the current page data
-  const currentPageData: { text: string, timestamp: number[] }[] = threePigsPages[currentPageIdx];
+  const currentPageData: { text: string; timestamp: number[] }[] =
+    threePigsPages[currentPageIdx];
 
   return (
-    <div className='flex flex-row w-screen relative'>
-      <div className='w-1/2'>
-        <Page 
+    <div className="flex flex-row w-screen relative">
+      <div className="w-1/2">
+        <Page
           words={currentPageData}
           currentTime={currentTime}
           isPlaying={isPlaying}
           image={exampleImage}
+          callback={setTime}
         />
       </div>
-      <div className='w-px bg-black absolute top-0 bottom-0 right-1/2'></div>
-      <Navigation 
+      <div className="w-px bg-black absolute top-0 bottom-0 right-1/2"></div>
+      <Navigation
         onPrevPage={prevPage}
         onPlayPause={togglePlayPause}
         onNextPage={nextPage}

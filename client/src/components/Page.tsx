@@ -4,7 +4,8 @@ interface PageProps {
     words: { text: string, timestamp: number[] }[],
     image?: string,
     currentTime: number,
-    isPlaying: boolean
+    isPlaying: boolean,
+    callback: (timestamp: number) => void
 }
 
 const Page = (props: PageProps) => {
@@ -13,7 +14,9 @@ const Page = (props: PageProps) => {
         {props.words.map((wordObj, index) => (
           <Word 
             key={index} 
-            word={wordObj.text} 
+            word={wordObj.text}
+            start={wordObj.timestamp && wordObj.timestamp[0]}
+            callback={props.callback} 
             isHighlighted={
               props.isPlaying ? (wordObj.timestamp && wordObj.timestamp[0] <= props.currentTime && props.currentTime < wordObj.timestamp[1])
                 : false
