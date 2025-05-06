@@ -7,6 +7,7 @@ WebApp Book Component for Catania UROP
  client/src:
  - contains primary React program displaying UI
  - src/assets contains audios/images/timestamp data
+ - adjust any filePaths to match their corresponding absolute paths
 
  whisperProgram:
  - run whisperProgram/timestamp_creator.py [path_to_file] to create audio timestamps
