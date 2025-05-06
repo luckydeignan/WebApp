@@ -1,1 +1,0 @@
-currently need to figure out how to stop audio upon end of page being read
