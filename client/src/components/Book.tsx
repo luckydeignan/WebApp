@@ -1,31 +1,77 @@
-import threePigsImage from "../assets/threePigsImage.png"; // replace with the actual image file
 import { useEffect, useRef, useState } from "react";
-import threePigsAudio from "../assets/books-for-kids-read-aloud.wav";
-import threePigsTimestamps from "C:/Users/ljdde/OneDrive/desktop/UROPs/CataniaUROP/WebApp2/WebApp/threePigsTimestamps.json";
 import Navigation from "./Navigate";
 import Page from "./Page";
+import LoadingSpinner from "./LoadingSpinner"; // Create this component for better UX
 
 const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [bookData, setBookData] = useState(null);
+  const [bookPages, setBookPages] = useState([]);
+  const [bookImage, setBookImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const audioRef = useRef(null);
+
+  // Function to load book data from the server
+  const loadBookData = async (bookId = "three-pigs") => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch timestamp data
+      const timestampResponse = await fetch(`http://localhost:3000/api/book/${bookId}/timestamps`);
+      if (!timestampResponse.ok) {
+        throw new Error(`Failed to fetch timestamps: ${timestampResponse.statusText}`);
+      }
+      const timestampData = await timestampResponse.json();
+      
+      // Set book data
+      setBookData(timestampData);
+      
+      // Process pages
+      const pages = splitJsonList(timestampData);
+      setBookPages(pages);
+      
+      // Set image URL
+      setBookImage(`http://localhost:3000/api/book/${bookId}/image`);
+      
+      // Initialize audio with the correct URL
+      if (audioRef.current) {
+        audioRef.current.src = `http://localhost:3000/api/book/${bookId}/audio`;
+        audioRef.current.load();
+      }
+      
+      setCurrentPageIdx(0);
+      setCurrentTime(0);
+      setIsPlaying(false);
+      
+    } catch (err) {
+      console.error("Error loading book data:", err);
+      setError(`Failed to load book: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Breaks an array of word-timestamp objects into batches that
    *   – contain ≥ chunkSize words
-   *   – end on the first word whose text finishes with “.”
+   *   – end on the first word whose text finishes with "."
    *
    * @param jsonList  full list of {text, timestamp} items
    * @param chunkSize minimum number of words per batch (default = 160)
    * @returns         nested array: batches[batchIdx][wordIdx]
    */
   function splitJsonList(
-    jsonList: { text: string; timestamp: number[] }[],
+    jsonList,
     chunkSize = 160
-  ): { text: string; timestamp: number[] }[][] {
-    const batches: { text: string; timestamp: number[] }[][] = [];
-    let currentBatch: { text: string; timestamp: number[] }[] = [];
+  ) {
+    if (!jsonList || !Array.isArray(jsonList)) return [];
+    
+    const batches = [];
+    let currentBatch = [];
 
     for (const word of jsonList) {
       currentBatch.push(word);
@@ -39,22 +85,18 @@ const Book = () => {
       }
     }
 
-    // push any trailing words that didn’t finish with “.”
+    // push any trailing words that didn't finish with "."
     if (currentBatch.length) batches.push(currentBatch);
 
     return batches;
   }
 
-  const threePigsPages: { text: string; timestamp: number[] }[][] =
-    splitJsonList(threePigsTimestamps);
-
-  // Initialize audio only once on component mount
+  // Initialize audio element and event listeners
   useEffect(() => {
-    audioRef.current = new Audio(threePigsAudio);
+    audioRef.current = new Audio();
 
     const handleTimeUpdate = () => {
-      const now = audioRef.current!.currentTime;
-      setCurrentTime(now);
+      setCurrentTime(audioRef.current.currentTime);
     };
 
     const handleAudioEnd = () => {
@@ -64,7 +106,10 @@ const Book = () => {
     audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
     audioRef.current.addEventListener("ended", handleAudioEnd);
 
-    // Cleanup only on component unmount
+    // Load the book data when component mounts
+    loadBookData();
+
+    // Cleanup on component unmount
     return () => {
       if (audioRef.current) {
         audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
@@ -76,20 +121,20 @@ const Book = () => {
 
   // Separate effect for page boundary checking
   useEffect(() => {
-    if (!audioRef.current || !threePigsPages[currentPageIdx]?.length) return;
+    if (!audioRef.current || !bookPages[currentPageIdx]?.length) return;
 
     const checkBoundary = () => {
-      const now = audioRef.current!.currentTime;
-      const page = threePigsPages[currentPageIdx];
+      const now = audioRef.current.currentTime;
+      const page = bookPages[currentPageIdx];
 
       const first = page[0].timestamp[0];
       const last = page[page.length - 1].timestamp[1];
 
       if (first > now || now > last) {
         setIsPlaying(false);
-        audioRef.current!.pause();
+        audioRef.current.pause();
         // Optional: reset to beginning of page
-        audioRef.current!.currentTime = first;
+        audioRef.current.currentTime = first;
       }
     };
 
@@ -105,25 +150,31 @@ const Book = () => {
         audioRef.current.removeEventListener("timeupdate", boundaryCheck);
       }
     };
-  }, [currentPageIdx]); // Rerun when page changes or time updates
+  }, [currentPageIdx, bookPages]); // Rerun when page changes or book pages update
 
   // Play/pause handler
   const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    
     if (isPlaying) {
-      audioRef.current!.pause();
+      audioRef.current.pause();
     } else {
-      audioRef.current!.play();
+      audioRef.current.play().catch(err => {
+        console.error("Error playing audio:", err);
+        setError("Failed to play audio. Please try again.");
+      });
     }
     setIsPlaying(!isPlaying);
   };
 
   // Next page handler
   const nextPage = () => {
-    if (currentPageIdx < threePigsPages.length - 1) {
+    if (currentPageIdx < bookPages.length - 1) {
       const nextPageIdx = currentPageIdx + 1;
-      audioRef.current!.pause();
-      audioRef.current!.currentTime =
-        threePigsPages[nextPageIdx][0].timestamp[0];
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = bookPages[nextPageIdx][0].timestamp[0];
+      }
       setCurrentPageIdx(nextPageIdx);
       setIsPlaying(false);
     }
@@ -132,13 +183,18 @@ const Book = () => {
   // Prev page handler
   const prevPage = () => {
     if (currentPageIdx > 0) {
-      setCurrentPageIdx(currentPageIdx - 1);
+      const prevPageIdx = currentPageIdx - 1;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = bookPages[prevPageIdx][0].timestamp[0];
+      }
+      setCurrentPageIdx(prevPageIdx);
       setIsPlaying(false);
     }
   };
 
-  // Add this function to your Book component
-  const setTime = (timestamp: number) => {
+  // Function to set time position in audio
+  const setTime = (timestamp) => {
     if (audioRef.current) {
       // First pause any current playback
       audioRef.current.pause();
@@ -156,13 +212,52 @@ const Book = () => {
         .catch((error) => {
           console.error("Failed to play audio:", error);
           setIsPlaying(false);
+          setError("Failed to play audio at the selected position.");
         });
     }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner message="Loading book data..." />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-red-50 p-4">
+        <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Book</h2>
+        <p className="text-red-700 mb-4">{error}</p>
+        <button 
+          onClick={() => loadBookData()} 
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  // If no book data yet
+  if (!bookPages.length) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <button 
+          onClick={() => loadBookData()} 
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Load Three Pigs Story
+        </button>
+      </div>
+    );
+  }
+
   // Get the current page data
-  const currentPageData: { text: string; timestamp: number[] }[] =
-    threePigsPages[currentPageIdx];
+  const currentPageData = bookPages[currentPageIdx];
 
   return (
     <div className="flex flex-row w-screen relative">
@@ -171,7 +266,7 @@ const Book = () => {
           words={currentPageData}
           currentTime={currentTime}
           isPlaying={isPlaying}
-          image={threePigsImage}
+          image={bookImage}
           callback={setTime}
         />
       </div>
@@ -181,6 +276,8 @@ const Book = () => {
           onPlayPause={togglePlayPause}
           onNextPage={nextPage}
           isPlaying={isPlaying}
+          currentPage={currentPageIdx + 1}
+          totalPages={bookPages.length}
         />
       </div>
     </div>

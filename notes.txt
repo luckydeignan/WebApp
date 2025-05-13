@@ -1,0 +1,5 @@
+first have option to select book, then fetches from server --> book title: word timestamp data
+
+once word timestamp data loaded in, render page content
+
+then add feature where audio file can be uploaded, at which point we run whisper api and same process ensues
