@@ -2,10 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import Navigation from "./Navigate";
 import Page from "./Page";
 import LoadingSpinner from "./LoadingSpinner"; // Create this component for better UX
+import ChooseBookButton from "./ChooseBookButton";
 
 interface TimestampWord {
   text: string;
   timestamp: number[];
+}
+
+export interface BookIdentifier {
+  id: string;
+  title: string;
+  idx?: number;
 }
 
 const Book = () => {
@@ -18,6 +25,35 @@ const Book = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [chosenBook, setChosenBook] = useState<boolean>(false);
+  const [availableBooks, setAvailableBooks] = useState<BookIdentifier[]>([]);
+
+  const fetchBooks = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/books");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch books: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log(data)
+      return data;
+    } catch (err) {
+      console.error("Error fetching books:", err);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks().then((data) => {
+      console.log(data);
+      const booksWithIDs = data.books.map((book: BookIdentifier, index: number) => ({
+        id: book.id,
+        title: book.title,
+        idx: index
+      }));
+      setAvailableBooks(booksWithIDs);
+    });
+  }, []);
 
   // Function to load book data from the server
   const loadBookData = async (bookId = "three-pigs") => {
@@ -204,6 +240,12 @@ const Book = () => {
     }
   };
 
+  // toggle chosen book
+  const toggleChosenBook = () => {
+    setChosenBook(!chosenBook);
+  }
+
+
   // Function to set time position in audio
   const setTime = (timestamp: number) => {
     if (audioRef.current) {
@@ -273,13 +315,34 @@ const Book = () => {
   return (
     <div className="flex flex-row w-screen relative">
       <div className="w-2/3 bg-yellow-100">
-        <Page
+        {chosenBook 
+        ?
+          <Page
           words={currentPageData}
           currentTime={currentTime}
           isPlaying={isPlaying}
           image={bookImage}
           callback={setTime}
-        />
+        /> 
+        :
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p>Choose a book to read</p>
+          {availableBooks.map(book => (
+            <ChooseBookButton
+              key={book.id}   /* or whatever uniquely identifies the book */
+              representingBook={book}
+              onChooseBook={toggleChosenBook}
+            />
+          ))}
+          {/* <button 
+            className='bg-red-900 hover:bg-yellow-600 hover:text-black text-white font-bold py-2 px-4 rounded' 
+            onClick={() => {
+              setChosenBook(true)
+            }
+          }
+          >Three Little Pigs</button> */}
+        </div>
+}
       </div>
       <div className="w-1/3 flex justify-center bg-yellow-600">
         <Navigation
@@ -287,6 +350,8 @@ const Book = () => {
           onPlayPause={togglePlayPause}
           onNextPage={nextPage}
           isPlaying={isPlaying}
+          chosenBook={chosenBook}
+          toggleChosenBook={toggleChosenBook}
         />
       </div>
     </div>

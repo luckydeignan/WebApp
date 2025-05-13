@@ -4,6 +4,8 @@ interface NavigationProps {
     onPrevPage: () => void;
     onPlayPause: () => void;
     onNextPage: () => void;
+    toggleChosenBook: () => void;
+    chosenBook: boolean;
     isPlaying: boolean;
 }
 
@@ -30,6 +32,14 @@ const Navigation = (props: NavigationProps) => {
           >
             Next Page
           </button>
+          {props.chosenBook &&
+          <button 
+            className='bg-red-900 hover:bg-yellow-100 hover:text-black text-white font-bold py-2 px-4 rounded' 
+            onClick={props.toggleChosenBook}
+          >
+            Choose Another Book
+          </button>
+}
         </div>
       </div>
     );
