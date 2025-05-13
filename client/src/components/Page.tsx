@@ -2,7 +2,7 @@ import Word from "./Word";
 
 interface PageProps {
     words: { text: string, timestamp: number[] }[],
-    image?: string,
+    image?: string | null,
     currentTime: number,
     isPlaying: boolean,
     callback: (timestamp: number) => void

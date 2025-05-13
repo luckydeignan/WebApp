@@ -3,16 +3,21 @@ import Navigation from "./Navigate";
 import Page from "./Page";
 import LoadingSpinner from "./LoadingSpinner"; // Create this component for better UX
 
+interface TimestampWord {
+  text: string;
+  timestamp: number[];
+}
+
 const Book = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [bookData, setBookData] = useState(null);
-  const [bookPages, setBookPages] = useState([]);
-  const [bookImage, setBookImage] = useState(null);
+  //const [bookData, setBookData] = useState<TimestampWord[] | null>(null);
+  const [bookPages, setBookPages] = useState<TimestampWord[][]>([]);
+  const [bookImage, setBookImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const audioRef = useRef(null);
+  const [error, setError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Function to load book data from the server
   const loadBookData = async (bookId = "three-pigs") => {
@@ -25,12 +30,12 @@ const Book = () => {
       if (!timestampResponse.ok) {
         throw new Error(`Failed to fetch timestamps: ${timestampResponse.statusText}`);
       }
-      const timestampData = await timestampResponse.json();
-      
+      const timestampData: TimestampWord[] = await timestampResponse.json();
+            
       // Set book data
-      setBookData(timestampData);
+      // setBookData(timestampData);
       
-      // Process pages
+      // Process
       const pages = splitJsonList(timestampData);
       setBookPages(pages);
       
@@ -49,7 +54,7 @@ const Book = () => {
       
     } catch (err) {
       console.error("Error loading book data:", err);
-      setError(`Failed to load book: ${err.message}`);
+      setError(`Failed to load book`); //todo error message
     } finally {
       setLoading(false);
     }
@@ -65,15 +70,16 @@ const Book = () => {
    * @returns         nested array: batches[batchIdx][wordIdx]
    */
   function splitJsonList(
-    jsonList,
+    jsonList: TimestampWord[] | null,
     chunkSize = 160
-  ) {
+  ): TimestampWord[][] {
     if (!jsonList || !Array.isArray(jsonList)) return [];
     
-    const batches = [];
-    let currentBatch = [];
+    const batches: TimestampWord[][] = [];
+    let currentBatch: TimestampWord[] = [];
 
-    for (const word of jsonList) {
+    for (let i=0; i<jsonList.length; i++) {
+      const word = jsonList[i];
       currentBatch.push(word);
 
       const reachedMin = currentBatch.length >= chunkSize;
@@ -96,7 +102,8 @@ const Book = () => {
     audioRef.current = new Audio();
 
     const handleTimeUpdate = () => {
-      setCurrentTime(audioRef.current.currentTime);
+      console.log("Current time:", audioRef.current!.currentTime);
+      setCurrentTime(audioRef.current!.currentTime);
     };
 
     const handleAudioEnd = () => {
@@ -124,19 +131,23 @@ const Book = () => {
     if (!audioRef.current || !bookPages[currentPageIdx]?.length) return;
 
     const checkBoundary = () => {
-      const now = audioRef.current.currentTime;
+      const now = audioRef.current!.currentTime;
       const page = bookPages[currentPageIdx];
-
+      
+      // Check boundaries
       const first = page[0].timestamp[0];
       const last = page[page.length - 1].timestamp[1];
 
       if (first > now || now > last) {
         setIsPlaying(false);
-        audioRef.current.pause();
+        audioRef.current!.pause();
         // Optional: reset to beginning of page
-        audioRef.current.currentTime = first;
+        audioRef.current!.currentTime = first;
       }
     };
+
+    // Only run this if book has loaded 
+    if (!bookPages[currentPageIdx]?.length) return;
 
     // Check boundaries when this effect runs
     checkBoundary();
@@ -194,7 +205,7 @@ const Book = () => {
   };
 
   // Function to set time position in audio
-  const setTime = (timestamp) => {
+  const setTime = (timestamp: number) => {
     if (audioRef.current) {
       // First pause any current playback
       audioRef.current.pause();
@@ -276,8 +287,6 @@ const Book = () => {
           onPlayPause={togglePlayPause}
           onNextPage={nextPage}
           isPlaying={isPlaying}
-          currentPage={currentPageIdx + 1}
-          totalPages={bookPages.length}
         />
       </div>
     </div>
