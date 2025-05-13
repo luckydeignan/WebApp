@@ -1,6 +1,11 @@
 # WebApp
 WebApp Book Component for Catania UROP
 
+# Quick Setup
+- navigate to WebApp/client and run npm run dev
+- in another terminal navigate to WebApp/server and run npm start
+- open localhost:5173
+
 
 # Important Directories:
 
