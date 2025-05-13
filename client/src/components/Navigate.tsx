@@ -9,6 +9,19 @@ interface NavigationProps {
     isPlaying: boolean;
 }
 
+/**
+ * Navigation component that displays to right side of page
+ * Allows user to navigate through book via prev/next pages and go back to choose another book
+ * 
+ * @param props params passed to the navigation component:
+ * - onPrevPage: function to call when prev page button is clicked
+ * - onPlayPause: function to call when play/pause button is clicked
+ * - onNextPage: function to call when next page button is clicked
+ * - toggleChosenBook: function to call when choose book button is clicked
+ * - chosenBook: whether the book is currently chosen (used for conditional rendering)
+ * - isPlaying: whether the book is currently playing (used for conditional rendering)
+ * @returns Navigation component
+ */
 const Navigation = (props: NavigationProps) => {
     return (
       <div className='flex flex-col items-center justify-center gap-y-2 absolute top-[25vh]'>

@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import Word from "./Word";
 
 interface PageProps {
@@ -10,13 +9,17 @@ interface PageProps {
 }
 
 
-
+/**
+ * Page component, which displays the actual content of current page of current book
+ * @param props params passed to the page component:
+ * - words: the array of word objects including their timestamps for the page
+ * - image: the relative path to the book image
+ * - currentTime: the current time in seconds from beginning of audio
+ * - isPlaying: whether the audio is currently playing
+ * - callback: sets the time position in the audio player (used for word clicks)
+ * @returns component represents page in a book
+ */
 const Page = (props: PageProps) => {
-    useEffect(() => {
-    console.log('hello', props.words);
-  }, []);
-
-
     return (
       <div className='flex w-full justify-center gap-x-2 p-4 flex-wrap'>
         {props.words.map((wordObj, index) => (

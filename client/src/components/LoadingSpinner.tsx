@@ -1,4 +1,6 @@
-
+/**
+ * @returns loading spinner component to show data/page is loading, used for improved UX
+ */
 const LoadingSpinner = ({ message = "Loading..." }) => {
   return (
     <div className="flex flex-col items-center justify-center p-6 text-center">

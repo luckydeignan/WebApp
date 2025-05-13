@@ -12,11 +12,20 @@ interface OpeningPageProps {
   onBookSelect: (bookId: string) => void;
 }
 
+/**
+ * Opening page component, where user can select a book
+ * @param onBookSelect function to call when a book is selected, basically tells parent component to change UI state
+ * @returns opening page component
+ */
 const OpeningPage = ({ onBookSelect }: OpeningPageProps) => {
   const [availableBooks, setAvailableBooks] = useState<BookIdentifier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Fetches the list of available books from the server
+   * Sets the availableBooks state variable as an array of book identifiers that are currently stored in server
+   */
   const fetchBooks = async () => {
   try {
     setLoading(true);
@@ -35,6 +44,7 @@ const OpeningPage = ({ onBookSelect }: OpeningPageProps) => {
   }
 };
 
+  // This useEffect calls fetchBooks() when the component mounts
   useEffect(() => {
     fetchBooks().then((data) => {
       const booksWithIDs = data.books.map((book: BookIdentifier, index: number) => ({
@@ -50,6 +60,7 @@ const OpeningPage = ({ onBookSelect }: OpeningPageProps) => {
     onBookSelect(bookId);
   };
 
+  // if takes awhile to render available books, show loading screen
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -58,7 +69,9 @@ const OpeningPage = ({ onBookSelect }: OpeningPageProps) => {
     );
   }
 
+  // if there is an error retrieving available books, show error message
   if (error) {
+    console.error(error);
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-red-50 p-4">
         <h2 className="text-xl font-bold text-red-600 mb-2">Error</h2>
@@ -99,6 +112,10 @@ const OpeningPage = ({ onBookSelect }: OpeningPageProps) => {
           ))}
         </div>
       )}
+      <h1 className="text-xl font-bold mt-8 text-yellow-700">or upload an audio file to add a new book:</h1>
+      <button className="mt-4 px-4 py-2 bg-yellow-200 rounded hover:bg-yellow-700 hover:text-white transition-colors">
+        Upload Audio feature to be implemented
+      </button>
     </div>
   );
 };

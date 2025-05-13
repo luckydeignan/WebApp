@@ -4,6 +4,10 @@ import Page from "./Page";
 import LoadingSpinner from "./LoadingSpinner";
 import api from "../lib/api.ts";
 
+/**
+ * The custom type for word-level timestamps
+ * includes the text of the word and the timestamp [start, end] with start and end times in seconds from beginning of audio
+ */
 interface TimestampWord {
   text: string;
   timestamp: number[];
@@ -14,6 +18,16 @@ interface BookProps {
   onBackToBookSelection: () => void;
 }
 
+/**
+ * Book component for reading the selected audio book
+ * Displays actual book content on left side of page via Page component
+ * Displays navigation tools on right side of page via Navigation component
+ * 
+ * @param params params passed to the book component:
+ * - bookId: the id of the book to load
+ * - onBackToBookSelection: function to call when user wants to go back to book selection; used to change parent component state
+ * @returns book component
+ */
 const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -24,8 +38,14 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // function to load book data from the server
-  const loadBookData = async (bookId: string) => {
+  /**
+   * Asynchronous function that makes API call to load selected book data
+   * Then sets the corresponding local state variables to represent retrieved book data
+   * 
+   * @param bookId the id of the book to load
+   * @returns nothing -- sets the book pages and book image, and resets playback state
+   */
+  const loadBookData = async (bookId: string): Promise<void> => {
   if (!bookId) return;
 
   setLoading(true);
@@ -100,7 +120,9 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     return batches;
   }
 
-  // Initialize audio element and event listeners
+  /**
+   * @description This useEffect initialises the audio element upon mount 
+  */ 
   useEffect(() => {
     audioRef.current = new Audio();
 
@@ -125,14 +147,21 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     };
   }, []); // Empty dependency array - runs once on mount
 
-  // Load book data when component mounts or bookId changes
+
+  /**
+   * @description This useEffect calls function that loads book data when the component mounts or the bookId changes
+   */
   useEffect(() => {
     if (bookId) {
       loadBookData(bookId);
     }
   }, [bookId]); // Reload if bookId changes
 
-  // Page boundary checking effect
+  /**
+   * @description Whenever the current page changes, check if the audio is out of bounds
+   * and if so, reset the audio to the beginning of the page
+   * Ensures that audio always starts from the beginning of a page and stops when the page is over
+   */
   useEffect(() => {
     if (!audioRef.current || !bookPages[currentPageIdx]?.length) return;
 
@@ -167,7 +196,9 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
         audioRef.current.removeEventListener("timeupdate", boundaryCheck);
       }
     };
-  }, [currentPageIdx, bookPages]); // Rerun when page changes or book pages update
+  }, [currentPageIdx, bookPages]); 
+
+
 
   // Play/pause handler
   const togglePlayPause = () => {
@@ -184,6 +215,8 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     setIsPlaying(!isPlaying);
   };
 
+
+
   // Next page handler
   const nextPage = () => {
     if (currentPageIdx < bookPages.length - 1) {
@@ -197,6 +230,8 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     }
   };
 
+
+
   // Prev page handler
   const prevPage = () => {
     if (currentPageIdx > 0) {
@@ -209,6 +244,8 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
       setIsPlaying(false);
     }
   };
+
+
 
   // Function to set time position in audio
   const setTime = (timestamp: number) => {
@@ -234,6 +271,7 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     }
   };
 
+
   // Loading state
   if (loading) {
     return (
@@ -242,6 +280,7 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
       </div>
     );
   }
+
 
   // Error state
   if (error) {
@@ -267,24 +306,9 @@ const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
     );
   }
 
-  // If no book data yet
-  if (!bookPages.length) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <p className="mb-4">No book data available.</p>
-        <button
-          onClick={onBackToBookSelection}
-          className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-        >
-          Choose a Book
-        </button>
-      </div>
-    );
-  }
-
-  // Get the current page data
+  // Get the current page data, then display current page and navigation
   const currentPageData = bookPages[currentPageIdx];
-
+  
   return (
     <div className="flex flex-row w-screen relative">
       <div className="w-2/3 bg-yellow-100">
