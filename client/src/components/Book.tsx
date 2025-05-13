@@ -56,7 +56,7 @@ const Book = () => {
   }, []);
 
   // Function to load book data from the server
-  const loadBookData = async (bookId = "three-pigs") => {
+  const loadBookData = async (bookId: string = "three-pigs") => {
     setLoading(true);
     setError(null);
     
@@ -331,16 +331,11 @@ const Book = () => {
             <ChooseBookButton
               key={book.id}   /* or whatever uniquely identifies the book */
               representingBook={book}
-              onChooseBook={toggleChosenBook}
+              onChooseBook={()=> {
+                toggleChosenBook();
+              }}
             />
           ))}
-          {/* <button 
-            className='bg-red-900 hover:bg-yellow-600 hover:text-black text-white font-bold py-2 px-4 rounded' 
-            onClick={() => {
-              setChosenBook(true)
-            }
-          }
-          >Three Little Pigs</button> */}
         </div>
 }
       </div>

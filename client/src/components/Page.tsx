@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Word from "./Word";
 
 interface PageProps {
@@ -8,7 +9,14 @@ interface PageProps {
     callback: (timestamp: number) => void
 }
 
+
+
 const Page = (props: PageProps) => {
+    useEffect(() => {
+    console.log('hello', props.words);
+  }, []);
+
+
     return (
       <div className='flex w-full justify-center gap-x-2 p-4 flex-wrap'>
         {props.words.map((wordObj, index) => (
