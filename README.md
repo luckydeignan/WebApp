@@ -21,15 +21,20 @@ WebApp Book Component for Catania UROP
 
  # Next Steps:
  - A potential next feature to implement is allowing the user to upload an audio file, then running the whisper program and saving the audio book data to server
+ - For now, implementer can simply just add new books as they see fit given an audio file, the workflow to do which described below
 
 
- # Whisper Program WorkFlow
- - run whisperProgram/timestamp_creator.py [path_to_file] to create audio timestamps
- - timestamp_data will be saved to WebApp/output directory
+ # Workflow for adding new book to server
+ - run whisperProgram/timestamp_creator.py [path_to_audio_file] to create audio timestamps
+ - timestamp_data will be saved to ./output directory
  - run whisperProgram/reformat.py [path_to_input_file] -o [path_to_output_file]
     - if no output file provided, reformatted JSON will just print to stdout
     - if output file provided, will dump JSON to whisperProgram/[output_file] 
- - from here, change file_path in line "import threePigsTimestamps from [file_path]" in client/src/components/Book.tsx
+ - from here, move timestamp_data into WebApp/server/data and move audio/image data into WebApp/server/assets
+ - Note: as of now, the title displayed in UI is based on filenames. Accordingly name your files following the format:
+      - If your title is Three Pigs, title the files Three-Pigs.[json/png/wav/etc]
+      - If your title is Moon and Mountains, title the files Moon-and-Mountains.[json/png/wav/etc]
+      - examples are provided in current repo
 
 
  

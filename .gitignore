@@ -16,3 +16,7 @@ python-tts/speech.wav
 python-tts/cython_constraint.txt
 python-tts/__pycache__
 cython_constraint.txt
+
+# Ignore saved whisper files
+whisperProgram/output/
+
