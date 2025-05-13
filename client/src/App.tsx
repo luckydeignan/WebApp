@@ -1,16 +1,32 @@
-
-import "./App.css";
+// App.tsx
+import { useState } from "react";
+import OpeningPage from "./components/OpeningPage";
 import Book from "./components/Book";
+import "./App.css";
 
-function App() {
-
+const App = () => {
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  
+  const handleBookSelect = (bookId: string) => {
+    setSelectedBookId(bookId);
+  };
+  
+  const handleBackToSelection = () => {
+    setSelectedBookId(null);
+  };
+  
   return (
-    <>
-      <div>
-        <Book />
-      </div>
-    </>
+    <div>
+      {selectedBookId ? (
+        <Book 
+          bookId={selectedBookId} 
+          onBackToBookSelection={handleBackToSelection} 
+        />
+      ) : (
+        <OpeningPage onBookSelect={handleBookSelect} />
+      )}
+    </div>
   );
-}
+};
 
 export default App;

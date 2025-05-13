@@ -1,100 +1,67 @@
 import { useEffect, useRef, useState } from "react";
 import Navigation from "./Navigate";
 import Page from "./Page";
-import LoadingSpinner from "./LoadingSpinner"; // Create this component for better UX
-import ChooseBookButton from "./ChooseBookButton";
+import LoadingSpinner from "./LoadingSpinner";
+import api from "../lib/api.ts";
 
 interface TimestampWord {
   text: string;
   timestamp: number[];
 }
 
-export interface BookIdentifier {
-  id: string;
-  title: string;
-  idx?: number;
+interface BookProps {
+  bookId: string;
+  onBackToBookSelection: () => void;
 }
 
-const Book = () => {
+const Book = ({ bookId, onBackToBookSelection }: BookProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  //const [bookData, setBookData] = useState<TimestampWord[] | null>(null);
   const [bookPages, setBookPages] = useState<TimestampWord[][]>([]);
   const [bookImage, setBookImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [chosenBook, setChosenBook] = useState<boolean>(false);
-  const [availableBooks, setAvailableBooks] = useState<BookIdentifier[]>([]);
 
-  const fetchBooks = async () => {
-    try {
-      const response = await fetch("http://localhost:3000/api/books");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch books: ${response.statusText}`);
-      }
-      const data = await response.json();
-      console.log(data)
-      return data;
-    } catch (err) {
-      console.error("Error fetching books:", err);
-      return [];
+  // function to load book data from the server
+  const loadBookData = async (bookId: string) => {
+  if (!bookId) return;
+
+  setLoading(true);
+  setError(null);
+
+  try {
+    /** ───── 1. GET word‑level timestamps ───── */
+    const { data: timestampData } = await api.get<TimestampWord[]>(
+      `/book/${bookId}/timestamps`
+    );
+
+    // Turn the flat word list into pages
+    const pages = splitJsonList(timestampData);
+    setBookPages(pages);
+
+    /** ───── 2. GET book image ───── */
+    const base = api.defaults.baseURL || '';
+    setBookImage(`${base}/book/${bookId}/image`);
+
+    // Initialise audio
+    if (audioRef.current) {
+      audioRef.current.src = `${base}/book/${bookId}/audio`;
+      audioRef.current.load();
     }
-  };
 
-  useEffect(() => {
-    fetchBooks().then((data) => {
-      console.log(data);
-      const booksWithIDs = data.books.map((book: BookIdentifier, index: number) => ({
-        id: book.id,
-        title: book.title,
-        idx: index
-      }));
-      setAvailableBooks(booksWithIDs);
-    });
-  }, []);
-
-  // Function to load book data from the server
-  const loadBookData = async (bookId: string = "three-pigs") => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Fetch timestamp data
-      const timestampResponse = await fetch(`http://localhost:3000/api/book/${bookId}/timestamps`);
-      if (!timestampResponse.ok) {
-        throw new Error(`Failed to fetch timestamps: ${timestampResponse.statusText}`);
-      }
-      const timestampData: TimestampWord[] = await timestampResponse.json();
-            
-      // Set book data
-      // setBookData(timestampData);
-      
-      // Process
-      const pages = splitJsonList(timestampData);
-      setBookPages(pages);
-      
-      // Set image URL
-      setBookImage(`http://localhost:3000/api/book/${bookId}/image`);
-      
-      // Initialize audio with the correct URL
-      if (audioRef.current) {
-        audioRef.current.src = `http://localhost:3000/api/book/${bookId}/audio`;
-        audioRef.current.load();
-      }
-      
-      setCurrentPageIdx(0);
-      setCurrentTime(0);
-      setIsPlaying(false);
-      
-    } catch (err) {
-      console.error("Error loading book data:", err);
-      setError(`Failed to load book`); //todo error message
-    } finally {
-      setLoading(false);
-    }
-  };
+    /** ───── 3. Reset playback state ───── */
+    setCurrentPageIdx(0);
+    setCurrentTime(0);
+    setIsPlaying(false);
+  } catch (err) {
+    console.error('Error loading book data:', err);
+    setError('Failed to load book. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   /**
    * Breaks an array of word-timestamp objects into batches that
@@ -138,7 +105,6 @@ const Book = () => {
     audioRef.current = new Audio();
 
     const handleTimeUpdate = () => {
-      console.log("Current time:", audioRef.current!.currentTime);
       setCurrentTime(audioRef.current!.currentTime);
     };
 
@@ -148,9 +114,6 @@ const Book = () => {
 
     audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
     audioRef.current.addEventListener("ended", handleAudioEnd);
-
-    // Load the book data when component mounts
-    loadBookData();
 
     // Cleanup on component unmount
     return () => {
@@ -162,7 +125,14 @@ const Book = () => {
     };
   }, []); // Empty dependency array - runs once on mount
 
-  // Separate effect for page boundary checking
+  // Load book data when component mounts or bookId changes
+  useEffect(() => {
+    if (bookId) {
+      loadBookData(bookId);
+    }
+  }, [bookId]); // Reload if bookId changes
+
+  // Page boundary checking effect
   useEffect(() => {
     if (!audioRef.current || !bookPages[currentPageIdx]?.length) return;
 
@@ -240,12 +210,6 @@ const Book = () => {
     }
   };
 
-  // toggle chosen book
-  const toggleChosenBook = () => {
-    setChosenBook(!chosenBook);
-  }
-
-
   // Function to set time position in audio
   const setTime = (timestamp: number) => {
     if (audioRef.current) {
@@ -285,12 +249,20 @@ const Book = () => {
       <div className="flex flex-col items-center justify-center h-screen bg-red-50 p-4">
         <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Book</h2>
         <p className="text-red-700 mb-4">{error}</p>
-        <button 
-          onClick={() => loadBookData()} 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Try Again
-        </button>
+        <div className="flex space-x-4">
+          <button 
+            onClick={() => bookId ? loadBookData(bookId) : null} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onBackToBookSelection}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Back to Books
+          </button>
+        </div>
       </div>
     );
   }
@@ -298,12 +270,13 @@ const Book = () => {
   // If no book data yet
   if (!bookPages.length) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <button 
-          onClick={() => loadBookData()} 
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+      <div className="flex flex-col items-center justify-center h-screen">
+        <p className="mb-4">No book data available.</p>
+        <button
+          onClick={onBackToBookSelection}
+          className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
         >
-          Load Three Pigs Story
+          Choose a Book
         </button>
       </div>
     );
@@ -315,29 +288,13 @@ const Book = () => {
   return (
     <div className="flex flex-row w-screen relative">
       <div className="w-2/3 bg-yellow-100">
-        {chosenBook 
-        ?
-          <Page
+        <Page
           words={currentPageData}
           currentTime={currentTime}
           isPlaying={isPlaying}
           image={bookImage}
           callback={setTime}
-        /> 
-        :
-        <div className="flex flex-col items-center justify-center h-screen">
-          <p>Choose a book to read</p>
-          {availableBooks.map(book => (
-            <ChooseBookButton
-              key={book.id}   /* or whatever uniquely identifies the book */
-              representingBook={book}
-              onChooseBook={()=> {
-                toggleChosenBook();
-              }}
-            />
-          ))}
-        </div>
-}
+        />
       </div>
       <div className="w-1/3 flex justify-center bg-yellow-600">
         <Navigation
@@ -345,8 +302,8 @@ const Book = () => {
           onPlayPause={togglePlayPause}
           onNextPage={nextPage}
           isPlaying={isPlaying}
-          chosenBook={chosenBook}
-          toggleChosenBook={toggleChosenBook}
+          chosenBook={true}
+          toggleChosenBook={onBackToBookSelection}
         />
       </div>
     </div>

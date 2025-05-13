@@ -11,9 +11,9 @@ interface NavigationProps {
 
 const Navigation = (props: NavigationProps) => {
     return (
-      <div className='flex flex-col items-center gap-y-2 absolute top-[25vh]'>
+      <div className='flex flex-col items-center justify-center gap-y-2 absolute top-[25vh]'>
         <img className='w-48 h-48 rounded-full' src={avatar} alt="Avatar" />
-        <div className='flex items-center gap-x-4'>
+        <div className='flex flex-wrap justify-center items-center gap-4'>
           <button 
             className='bg-red-900 hover:bg-yellow-100 hover:text-black text-white font-bold py-2 px-4 rounded' 
             onClick={props.onPrevPage}
